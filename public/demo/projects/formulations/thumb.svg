@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f1428"/>
+      <stop offset="100%" stop-color="#2d1b3d"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#581c87" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#2d1b3d" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="980" cy="120" r="180" fill="#e879f9" opacity="0.12"/>
+  <circle cx="180" cy="560" r="140" fill="#f0abfc" opacity="0.1"/>
+  <rect x="80" y="90" width="720" height="495" rx="24" fill="url(#panel)" stroke="#d8b4fe" stroke-opacity="0.25"/>
+  <rect x="120" y="130" width="220" height="16" rx="8" fill="#d8b4fe" opacity="0.35"/>
+  <rect x="120" y="170" width="360" height="28" rx="10" fill="#e879f9" opacity="0.85"/>
+  <rect x="120" y="220" width="300" height="14" rx="7" fill="#d8b4fe" opacity="0.35"/>
+  <rect x="120" y="250" width="260" height="14" rx="7" fill="#d8b4fe" opacity="0.25"/>
+  <rect x="120" y="300" width="640" height="180" rx="18" fill="#1f1428" opacity="0.45"/>
+  <rect x="360" y="256" width="36" height="64" rx="6" fill="#e879f9" opacity="0.35"/><rect x="412" y="292" width="36" height="28" rx="6" fill="#e879f9" opacity="0.47"/><rect x="464" y="274" width="36" height="46" rx="6" fill="#e879f9" opacity="0.59"/><rect x="516" y="256" width="36" height="64" rx="6" fill="#e879f9" opacity="0.71"/>
+  <path d="M140 430 Q220 360 300 410 T460 390 T620 420 T780 360" fill="none" stroke="#f0abfc" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="780" cy="360" r="10" fill="#f0abfc"/>
+  <rect x="860" y="150" width="240" height="360" rx="20" fill="#1f1428" opacity="0.55" stroke="#d8b4fe" stroke-opacity="0.2"/>
+  <rect x="890" y="190" width="180" height="120" rx="16" fill="#e879f9" opacity="0.35"/>
+  <rect x="890" y="330" width="140" height="14" rx="7" fill="#d8b4fe" opacity="0.35"/>
+  <rect x="890" y="360" width="170" height="14" rx="7" fill="#d8b4fe" opacity="0.25"/>
+  <rect x="890" y="390" width="120" height="14" rx="7" fill="#d8b4fe" opacity="0.2"/>
+  <rect x="890" y="440" width="180" height="44" rx="12" fill="#e879f9" opacity="0.75"/>
+  <text x="80" y="640" fill="#d8b4fe" font-family="system-ui, sans-serif" font-size="28" opacity="0.8">Formulation lab</text>
+</svg>

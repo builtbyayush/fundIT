@@ -37,3 +37,4 @@ FundIt's final investment instrument and production payment provider are pending
 
 See [`src/docs/investment-domain.md`](src/docs/investment-domain.md).
 # fundIT
+# fundIT
