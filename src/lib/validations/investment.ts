@@ -86,10 +86,27 @@ export const createInvestmentFormSchema = z.object({
   amountMajor: z.string().min(1, "Amount is required"),
 });
 
+export const investorInvestmentStatusFilterSchema = z.enum([
+  "all",
+  "confirmed",
+  "pending",
+  "failed",
+]);
+
+export type InvestorInvestmentStatusFilter = z.infer<
+  typeof investorInvestmentStatusFilterSchema
+>;
+
 export const investorInvestmentListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(10),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+  status: investorInvestmentStatusFilterSchema.catch("all").default("all"),
+  search: z.string().trim().optional().default(""),
 });
+
+export type InvestorInvestmentListQuery = z.infer<
+  typeof investorInvestmentListQuerySchema
+>;
 
 export const adminInvestmentListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

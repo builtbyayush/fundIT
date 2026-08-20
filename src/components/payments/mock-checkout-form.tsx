@@ -60,8 +60,8 @@ export function MockCheckoutForm({
       </form>
 
           <p className="text-xs text-muted-foreground">
-            Development mock checkout only. This simulates payment success or failure and
-            is not a real payment gateway.
+            Development payment simulation only. This is not Razorpay or any live
+            gateway. It records success or failure for local testing.
           </p>
     </div>
   );

@@ -190,6 +190,56 @@ export async function getPublishedProjectBySlug(slug: string) {
     .exec();
 }
 
+export async function listRelatedPublishedProjects(input: {
+  excludeId: string;
+  categoryIds: string[];
+  limit?: number;
+}): Promise<IProjectDocument[]> {
+  const limit = Math.min(Math.max(input.limit ?? 4, 1), 4);
+  const categoryIds = input.categoryIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+  if (!mongoose.Types.ObjectId.isValid(input.excludeId) || categoryIds.length === 0) {
+    return [];
+  }
+
+  const items = await Project.find({
+    status: ProjectStatus.PUBLISHED,
+    _id: { $ne: new mongoose.Types.ObjectId(input.excludeId) },
+    categories: { $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)) },
+  })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .limit(limit)
+    .populate("categories", "name slug icon")
+    .populate("primaryCategory", "name slug icon");
+
+  return items as unknown as IProjectDocument[];
+}
+
+export async function listPublishedProjectsExcluding(input: {
+  excludeProjectIds: string[];
+  limit?: number;
+}): Promise<IProjectDocument[]> {
+  const limit = Math.min(Math.max(input.limit ?? 4, 1), 4);
+  const excludeIds = input.excludeProjectIds.filter((id) =>
+    mongoose.Types.ObjectId.isValid(id),
+  );
+
+  const filter: FilterQuery<IProjectDocument> = {
+    status: ProjectStatus.PUBLISHED,
+  };
+  if (excludeIds.length > 0) {
+    filter._id = { $nin: excludeIds.map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+
+  const items = await Project.find(filter)
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .limit(limit)
+    .populate("categories", "name slug icon")
+    .populate("primaryCategory", "name slug icon");
+
+  return items as unknown as IProjectDocument[];
+}
+
 export async function updateProject(
   id: string,
   input: ProjectInput,

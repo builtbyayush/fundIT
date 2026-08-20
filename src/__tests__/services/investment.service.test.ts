@@ -14,8 +14,13 @@ const OPP_ID = "507f1f77bcf86cd799439013";
 const INV_ID = "507f1f77bcf86cd799439014";
 
 const projectFindByIdMock = vi.fn();
+const projectFindMock = vi.fn();
 const investmentCreateMock = vi.fn();
 const investmentFindByIdMock = vi.fn();
+const investmentFindMock = vi.fn();
+const investmentCountDocumentsMock = vi.fn();
+const investmentAggregateMock = vi.fn();
+const investmentDistinctMock = vi.fn();
 const getNextSequenceMock = vi.fn();
 const getOpportunityByProjectIdMock = vi.fn();
 const isOpportunityCurrentlyInvestableMock = vi.fn();
@@ -26,6 +31,7 @@ const releaseFundingReservationMock = vi.fn();
 vi.mock("@/models/Project", () => ({
   Project: {
     findById: (...args: unknown[]) => projectFindByIdMock(...args),
+    find: (...args: unknown[]) => projectFindMock(...args),
   },
 }));
 
@@ -33,9 +39,10 @@ vi.mock("@/models/Investment", () => ({
   Investment: {
     create: (...args: unknown[]) => investmentCreateMock(...args),
     findById: (...args: unknown[]) => investmentFindByIdMock(...args),
-    countDocuments: vi.fn(),
-    find: vi.fn(),
-    aggregate: vi.fn(),
+    countDocuments: (...args: unknown[]) => investmentCountDocumentsMock(...args),
+    find: (...args: unknown[]) => investmentFindMock(...args),
+    aggregate: (...args: unknown[]) => investmentAggregateMock(...args),
+    distinct: (...args: unknown[]) => investmentDistinctMock(...args),
   },
 }));
 
@@ -63,7 +70,12 @@ vi.mock("@/services/funding.service", () => ({
 import {
   confirmInvestment,
   createInvestment,
+  getInvestorBackedProjectIds,
   getInvestorInvestment,
+  getInvestorInvestmentStats,
+  listAdminInvestments,
+  listInvestorInvestments,
+  serializeInvestment,
 } from "@/services/investment.service";
 
 function mockOpportunity(overrides: Record<string, unknown> = {}) {
@@ -142,6 +154,16 @@ describe("investment.service", () => {
     ).rejects.toMatchObject({ code: "BELOW_MINIMUM" });
   });
 
+  it("rejects amounts above maximum", async () => {
+    await expect(
+      createInvestment({
+        projectId: PROJECT_ID,
+        investorId: INVESTOR_ID,
+        amountMinor: 200_000_00,
+      }),
+    ).rejects.toMatchObject({ code: "ABOVE_MAXIMUM" });
+  });
+
   it("rejects when opportunity is not investable", async () => {
     isOpportunityCurrentlyInvestableMock.mockReturnValue(false);
     await expect(
@@ -211,5 +233,162 @@ describe("investment.service", () => {
       code: "FUNDING_TARGET_REACHED",
     });
     expect(investment.status).toBe(InvestmentStatus.FAILED);
+  });
+
+  it("lists only the requesting investor's investments and scopes status groups", async () => {
+    const chain = {
+      sort: vi.fn().mockReturnThis(),
+      skip: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      populate: vi.fn().mockResolvedValue([mockInvestment()]),
+    };
+    investmentFindMock.mockReturnValue(chain);
+    investmentCountDocumentsMock.mockResolvedValue(1);
+
+    const result = await listInvestorInvestments(INVESTOR_ID, {
+      page: 1,
+      limit: 12,
+      status: "pending",
+      search: "",
+    });
+
+    expect(result.total).toBe(1);
+    expect(investmentFindMock).toHaveBeenCalledWith({
+      investor: INVESTOR_ID,
+      status: {
+        $in: [InvestmentStatus.INITIATED, InvestmentStatus.PAYMENT_PENDING],
+      },
+    });
+    expect(chain.limit).toHaveBeenCalledWith(12);
+  });
+
+  it("returns an empty investor list when project search matches nothing", async () => {
+    projectFindMock.mockReturnValue({
+      select: vi.fn().mockResolvedValue([]),
+    });
+
+    const result = await listInvestorInvestments(INVESTOR_ID, {
+      page: 1,
+      limit: 12,
+      status: "all",
+      search: "no-such-idea",
+    });
+
+    expect(result.items).toEqual([]);
+    expect(result.total).toBe(0);
+    expect(investmentFindMock).not.toHaveBeenCalled();
+  });
+
+  it("scopes project title search to matching project ids for that investor", async () => {
+    projectFindMock.mockReturnValue({
+      select: vi.fn().mockResolvedValue([{ _id: PROJECT_ID }]),
+    });
+    const chain = {
+      sort: vi.fn().mockReturnThis(),
+      skip: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      populate: vi.fn().mockResolvedValue([]),
+    };
+    investmentFindMock.mockReturnValue(chain);
+    investmentCountDocumentsMock.mockResolvedValue(0);
+
+    await listInvestorInvestments(INVESTOR_ID, {
+      page: 1,
+      limit: 12,
+      status: "confirmed",
+      search: "CareVision",
+    });
+
+    expect(investmentFindMock).toHaveBeenCalledWith({
+      investor: INVESTOR_ID,
+      status: { $in: [InvestmentStatus.CONFIRMED] },
+      project: { $in: [PROJECT_ID] },
+    });
+  });
+
+  it("returns distinct backed project ids for the investor", async () => {
+    investmentDistinctMock.mockResolvedValue([PROJECT_ID]);
+    await expect(getInvestorBackedProjectIds(INVESTOR_ID)).resolves.toEqual([PROJECT_ID]);
+    expect(investmentDistinctMock).toHaveBeenCalledWith("project", {
+      investor: INVESTOR_ID,
+    });
+  });
+
+  it("includes failed counts in investor stats", async () => {
+    investmentCountDocumentsMock
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
+    investmentAggregateMock.mockResolvedValue([{ total: 50_000_00 }]);
+
+    const stats = await getInvestorInvestmentStats(INVESTOR_ID);
+
+    expect(stats).toEqual({
+      total: 4,
+      confirmed: 2,
+      pending: 1,
+      failed: 1,
+      confirmedAmountMinor: 50_000_00,
+    });
+    expect(investmentCountDocumentsMock).toHaveBeenNthCalledWith(4, {
+      investor: INVESTOR_ID,
+      status: InvestmentStatus.FAILED,
+    });
+  });
+
+  it("serializes populated project media without exposing investor internals beyond id", () => {
+    const serialized = serializeInvestment(
+      mockInvestment({
+        project: {
+          _id: { toString: () => PROJECT_ID },
+          title: "CareVision AI",
+          slug: "carevision-ai",
+          coverImage: "https://cdn.example/cover.jpg",
+          thumbnail: null,
+          primaryCategory: {
+            _id: { toString: () => "cat-1" },
+            name: "Healthcare",
+            slug: "healthcare",
+          },
+          categories: [],
+        },
+      }) as never,
+    );
+
+    expect(serialized.project).toMatchObject({
+      title: "CareVision AI",
+      coverImage: "https://cdn.example/cover.jpg",
+    });
+    expect(serialized).not.toHaveProperty("paymentOrder");
+  });
+
+  it("lists admin investments without scoping to an investor id", async () => {
+    const chain = {
+      sort: vi.fn().mockReturnThis(),
+      skip: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      populate: vi.fn().mockReturnThis(),
+    };
+    chain.populate.mockReturnValueOnce(chain).mockResolvedValueOnce([]);
+    investmentFindMock.mockReturnValue(chain);
+    investmentCountDocumentsMock.mockResolvedValue(0);
+
+    await listAdminInvestments({
+      page: 1,
+      limit: 10,
+      search: "INV-1",
+      status: InvestmentStatus.CONFIRMED,
+      paymentStatus: PaymentStatus.SUCCESS,
+    });
+
+    expect(investmentFindMock).toHaveBeenCalledWith({
+      status: InvestmentStatus.CONFIRMED,
+      paymentStatus: PaymentStatus.SUCCESS,
+      investmentNumber: { $regex: "INV-1", $options: "i" },
+    });
+    expect(investmentFindMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ investor: expect.anything() }),
+    );
   });
 });

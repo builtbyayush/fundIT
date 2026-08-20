@@ -3,7 +3,7 @@ import { themeConfig } from "./theme";
 export const siteConfig = {
   name: "FundIt",
   description:
-    "Discover curated investment opportunities and explore promising projects on FundIt.",
+    "Discover ideas. Back what you believe in. Big ideas don't always need big money.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   logo: {
     text: "FundIt",

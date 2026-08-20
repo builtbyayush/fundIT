@@ -14,69 +14,51 @@ export async function CtaSection() {
   const isAdmin = session?.user?.role === UserRole.ADMIN;
 
   return (
-    <section className="py-20 sm:py-24">
+    <section className="py-16 sm:py-20">
       <Container>
-        <div className="relative overflow-hidden rounded-2xl bg-primary px-8 py-16 text-center sm:px-16">
+        <div className="relative overflow-hidden rounded-3xl bg-primary px-8 py-16 text-center sm:px-16">
           <div className="relative z-10 mx-auto max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
-              Ready to discover your next opportunity?
+            <h2 className="font-display text-3xl text-primary-foreground sm:text-4xl">
+              Find something worth backing.
             </h2>
-            <p className="mt-4 text-lg text-primary-foreground/80">
-              {isLoggedIn
-                ? `Browse curated projects on ${siteConfig.name} and follow opportunities that match your interests. FundIt does not guarantee investment returns.`
-                : `Create a ${siteConfig.name} investor account to explore curated projects and follow opportunities that match your interests. FundIt does not guarantee investment returns.`}
+            <p className="mt-4 text-lg leading-relaxed text-primary-foreground/85">
+              Explore projects, discover new ideas, and see what&apos;s happening on{" "}
+              {siteConfig.name}.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Button variant="secondary" size="lg" asChild>
+                <Link href="/projects">
+                  Explore opportunities
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
               {isLoggedIn ? (
-                <>
-                  <Button variant="secondary" size="lg" asChild>
-                    <Link href="/projects">
-                      Explore Opportunities
-                      <ArrowRight className="ml-1" aria-hidden="true" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
-                    asChild
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+                  asChild
+                >
+                  <Link
+                    href={isAdmin ? "/admin" : isInvestor ? "/investor/investments" : "/investor"}
                   >
-                    <Link
-                      href={
-                        isAdmin
-                          ? "/admin"
-                          : isInvestor
-                            ? "/investor/investments"
-                            : "/investor"
-                      }
-                    >
-                      {isAdmin
-                        ? "Go to dashboard"
-                        : isInvestor
-                          ? "My investments"
-                          : "Go to dashboard"}
-                    </Link>
-                  </Button>
-                </>
+                    {isAdmin ? "Go to dashboard" : isInvestor ? "My investments" : "Go to dashboard"}
+                  </Link>
+                </Button>
               ) : (
-                <>
-                  <Button variant="secondary" size="lg" asChild>
-                    <Link href="/signup">
-                      Create Investor Account
-                      <ArrowRight className="ml-1" aria-hidden="true" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
-                    asChild
-                  >
-                    <Link href="/projects">Explore Opportunities</Link>
-                  </Button>
-                </>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+                  asChild
+                >
+                  <Link href="/signup">Join FundIt</Link>
+                </Button>
               )}
             </div>
+            <p className="mt-6 text-sm text-primary-foreground/70">
+              FundIt does not guarantee investment returns.
+            </p>
           </div>
         </div>
       </Container>

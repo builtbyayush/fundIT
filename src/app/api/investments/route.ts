@@ -24,13 +24,11 @@ export async function GET(request: Request) {
     const query = investorInvestmentListQuerySchema.parse({
       page: searchParams.get("page") ?? 1,
       limit: searchParams.get("limit") ?? 10,
+      status: searchParams.get("status") ?? "all",
+      search: searchParams.get("search") ?? "",
     });
 
-    const result = await listInvestorInvestments(
-      investor.id,
-      query.page,
-      query.limit,
-    );
+    const result = await listInvestorInvestments(investor.id, query);
 
     return NextResponse.json(
       successResponse({

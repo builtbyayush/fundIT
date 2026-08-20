@@ -14,19 +14,19 @@ const TARGETS = [
   {
     slug: "medsense-clinical-assistant",
     fundingTargetMinor: 1_00_00_000_00,
-    minimumInvestmentMinor: 5_000_00,
+    minimumInvestmentMinor: 1_000_00,
     maximumInvestmentMinor: 50_000_00,
   },
   {
     slug: "orbit-task-workspace",
     fundingTargetMinor: 75_00_000_00,
-    minimumInvestmentMinor: 5_000_00,
+    minimumInvestmentMinor: 1_000_00,
     maximumInvestmentMinor: 50_000_00,
   },
   {
     slug: "greenleaf-daily-nutrition",
     fundingTargetMinor: 50_00_000_00,
-    minimumInvestmentMinor: 5_000_00,
+    minimumInvestmentMinor: 1_000_00,
     maximumInvestmentMinor: 50_000_00,
   },
 ] as const;

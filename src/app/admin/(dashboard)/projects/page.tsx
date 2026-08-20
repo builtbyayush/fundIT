@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PROJECT_STATUSES } from "@/constants/project-status";
+import { projectStatusLabel } from "@/lib/admin/status-presentation";
 import { connectToDatabase } from "@/lib/db";
 import { adminProjectListQuerySchema } from "@/lib/validations/project";
 import { listActiveCategories, serializeCategory } from "@/services/category.service";
+import { getInvestmentSummariesForProjects } from "@/services/opportunity.service";
 import {
   listAdminProjects,
   serializeAdminProject,
@@ -36,7 +38,9 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
   ]);
 
   const projects = result.items.map((item) => serializeAdminProject(item));
+  const summaries = await getInvestmentSummariesForProjects(projects.map((project) => project.id));
   const categoryOptions = categories.map(serializeCategory);
+  const filtered = Boolean(query.search || query.category || query.status);
 
   const buildHref = (page: number) => {
     const sp = new URLSearchParams();
@@ -51,12 +55,10 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Admin / Projects
-          </p>
-          <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">
-            Create, publish, and manage investment opportunities.
+          <h2 className="text-xl font-semibold tracking-tight">Projects</h2>
+          <p className="text-sm text-muted-foreground">
+            {result.total} project{result.total === 1 ? "" : "s"}
+            {filtered ? " matching filters" : ""}
           </p>
         </div>
         <Button asChild>
@@ -64,10 +66,10 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         </Button>
       </div>
 
-      <form className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-4">
+      <form className="grid gap-3 rounded-xl border border-border/80 bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Input
           name="search"
-          placeholder="Search by title"
+          placeholder="Search projects..."
           defaultValue={query.search}
           aria-label="Search projects"
         />
@@ -83,7 +85,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
           <option value="">All statuses</option>
           {PROJECT_STATUSES.map((status) => (
             <option key={status} value={status}>
-              {status}
+              {projectStatusLabel(status)}
             </option>
           ))}
         </Select>
@@ -93,24 +95,31 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
       </form>
 
       <AdminProjectTable
-        projects={projects.map((project) => ({
-          id: project.id,
-          title: project.title,
-          status: project.status,
-          createdAt: project.createdAt,
-          publishedAt: project.publishedAt,
-          primaryCategory: {
-            name: project.primaryCategory.name || project.categories[0]?.name || "",
-          },
-          extraCategoryCount: Math.max(project.categories.length - 1, 0),
-          createdBy: { name: project.createdBy.name },
-        }))}
+        filtered={filtered}
+        projects={projects.map((project) => {
+          const summary = summaries.get(project.id);
+          return {
+            id: project.id,
+            title: project.title,
+            slug: project.slug,
+            status: project.status,
+            updatedAt: project.updatedAt,
+            categories: project.categories,
+            primaryCategory: {
+              name: project.primaryCategory.name || project.categories[0]?.name || "",
+            },
+            opportunityStatus: summary?.opportunityStatus ?? null,
+            committedAmountMinor: summary?.committedAmountMinor ?? 0,
+            fundingTargetMinor: summary?.fundingTargetMinor ?? null,
+            currency: summary?.currency ?? null,
+          };
+        })}
       />
 
       {result.totalPages > 1 ? (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <p>
-            Page {result.page} of {result.totalPages} · {result.total} total
+            Page {result.page} of {result.totalPages} · {result.total} projects
           </p>
           <div className="flex gap-2">
             {result.page > 1 ? (

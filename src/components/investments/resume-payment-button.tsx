@@ -6,13 +6,25 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { resumePaymentAction } from "@/lib/actions/investment";
 
-export function ResumePaymentButton({ investmentId }: { investmentId: string }) {
+export function ResumePaymentButton({
+  investmentId,
+  label = "Complete payment",
+  variant = "default",
+  className,
+}: {
+  investmentId: string;
+  label?: string;
+  variant?: "default" | "outline" | "secondary";
+  className?: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
     <Button
       disabled={pending}
+      variant={variant}
+      className={className}
       onClick={() => {
         startTransition(async () => {
           const result = await resumePaymentAction(investmentId);
@@ -22,7 +34,7 @@ export function ResumePaymentButton({ investmentId }: { investmentId: string }) 
         });
       }}
     >
-      {pending ? "Opening checkout…" : "Complete payment"}
+      {pending ? "Opening checkout…" : label}
     </Button>
   );
 }

@@ -15,12 +15,18 @@ import {
 } from "@/components/ui/card";
 import type { CurrencyCode } from "@/constants/currency";
 import { DEFAULT_CURRENCY } from "@/constants/currency";
+import { formatMoneyCompact } from "@/lib/money";
+import {
+  PASTEL_BADGE_VARIANT,
+  pastelForCategorySlug,
+} from "@/lib/project/category-pastel";
 import {
   categoryDisplayLabels,
   formatProjectLocation,
   resolveProjectCardImage,
   type DisplayCategory,
 } from "@/lib/project/display";
+import { cn } from "@/lib/utils";
 
 export interface PublicProjectCardCategory extends DisplayCategory {
   slug: string;
@@ -46,6 +52,7 @@ export interface PublicProjectCardData {
     currency: string | null;
     committedAmountMinor: number;
     fundingTargetMinor: number | null;
+    minimumInvestmentMinor?: number | null;
   } | null;
 }
 
@@ -56,24 +63,45 @@ function orderedCategories(project: PublicProjectCardData): DisplayCategory[] {
   return project.primaryCategory ? [project.primaryCategory] : [];
 }
 
-export function ProjectCard({ project }: { project: PublicProjectCardData }) {
+export function ProjectCard({
+  project,
+  variant = "default",
+}: {
+  project: PublicProjectCardData;
+  variant?: "default" | "catalog";
+}) {
+  const isCatalog = variant === "catalog";
   const location = formatProjectLocation(project.location);
   const investment = project.investment;
   const currency = (investment?.currency as CurrencyCode | null) ?? DEFAULT_CURRENCY;
   const categories = orderedCategories(project);
   const { labels, more } = categoryDisplayLabels(categories);
   const imageSrc = resolveProjectCardImage(project.thumbnail, project.coverImage);
+  const primary = project.primaryCategory ?? (project.categories?.[0] ?? null);
+  const primarySlug = primary?.slug;
+  const primaryBadgeVariant = primarySlug
+    ? PASTEL_BADGE_VARIANT[pastelForCategorySlug(primarySlug)]
+    : "pastelMint";
 
-  const ctaLabel = investment?.investable ? "Invest now" : "View opportunity";
-  const ctaHref = investment?.investable
-    ? `/projects/${project.slug}/invest`
-    : `/projects/${project.slug}`;
+  const ctaLabel = isCatalog
+    ? "View"
+    : investment?.investable
+      ? "Invest now"
+      : "View opportunity";
+  const ctaHref = isCatalog
+    ? `/projects/${project.slug}`
+    : investment?.investable
+      ? `/projects/${project.slug}/invest`
+      : `/projects/${project.slug}`;
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
+    <Card variant="interactive" className="group flex h-full flex-col overflow-hidden">
       <Link
         href={`/projects/${project.slug}`}
-        className="relative block aspect-[16/10] overflow-hidden bg-muted"
+        className={cn(
+          "relative block overflow-hidden bg-pastel-blue/60",
+          isCatalog ? "aspect-[4/3]" : "aspect-[16/10]",
+        )}
       >
         {imageSrc ? (
           <ProjectImage
@@ -83,6 +111,7 @@ export function ProjectCard({ project }: { project: PublicProjectCardData }) {
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             compactPlaceholder
+            className="motion-safe-transition group-hover:scale-105"
           />
         ) : (
           <ProjectMediaPlaceholder title={project.title} compact />
@@ -90,10 +119,12 @@ export function ProjectCard({ project }: { project: PublicProjectCardData }) {
       </Link>
 
       <CardHeader className="space-y-3 pb-3">
-        {categories.length > 0 ? (
+        {isCatalog && primary ? (
+          <Badge variant={primaryBadgeVariant}>{primary.name}</Badge>
+        ) : categories.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
             {labels.map((label, index) => (
-              <Badge key={`${label}-${index}`} variant={index === 0 ? "secondary" : "outline"}>
+              <Badge key={`${label}-${index}`} variant={index === 0 ? "pastelMint" : "outline"}>
                 {label}
               </Badge>
             ))}
@@ -119,8 +150,9 @@ export function ProjectCard({ project }: { project: PublicProjectCardData }) {
             committedMinor={investment.committedAmountMinor}
             targetMinor={investment.fundingTargetMinor}
             currency={currency}
+            compact={isCatalog}
           />
-        ) : investment?.committedAmountMinor ? (
+        ) : !isCatalog && investment?.committedAmountMinor ? (
           <FundingProgressBar
             committedMinor={investment.committedAmountMinor}
             targetMinor={null}
@@ -128,12 +160,33 @@ export function ProjectCard({ project }: { project: PublicProjectCardData }) {
           />
         ) : null}
 
-        {location ? <p className="text-sm text-muted-foreground">{location}</p> : null}
+        {investment?.minimumInvestmentMinor ? (
+          <p className="text-sm">
+            <span className="text-muted-foreground">{isCatalog ? "Starts " : "Starts at "}</span>
+            <span className="font-semibold text-foreground">
+              {formatMoneyCompact({
+                amountMinor: investment.minimumInvestmentMinor,
+                currency,
+              })}
+            </span>
+          </p>
+        ) : null}
+
+        {!isCatalog && location ? (
+          <p className="text-sm text-muted-foreground">{location}</p>
+        ) : null}
       </CardContent>
 
       <CardFooter className="pt-0">
-        <Button className="w-full" variant={investment?.investable ? "default" : "secondary"} asChild>
-          <Link href={ctaHref}>{ctaLabel}</Link>
+        <Button
+          className="w-full"
+          variant={isCatalog || !investment?.investable ? "secondary" : "default"}
+          asChild
+        >
+          <Link href={ctaHref}>
+            {ctaLabel}
+            {isCatalog ? <span aria-hidden="true"> →</span> : null}
+          </Link>
         </Button>
       </CardFooter>
     </Card>

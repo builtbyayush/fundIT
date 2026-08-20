@@ -79,6 +79,34 @@ export function formatMoney(money: Money, locale = "en-IN"): string {
   }).format(major);
 }
 
+function compactNumber(value: number): string {
+  return value.toFixed(1).replace(/\.0$/, "");
+}
+
+/**
+ * Compact display formatting only (e.g. ₹24.8L). Not for arithmetic.
+ */
+export function formatMoneyCompact(money: Money, locale = "en-IN"): string {
+  assertMoney(money);
+  const major = money.amountMinor / CURRENCY_MINOR_UNITS[money.currency];
+
+  if (money.currency === CurrencyCode.INR) {
+    if (major >= 10_000_000) {
+      return `₹${compactNumber(major / 10_000_000)}Cr`;
+    }
+    if (major >= 100_000) {
+      return `₹${compactNumber(major / 100_000)}L`;
+    }
+  }
+
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: money.currency,
+    minimumFractionDigits: Number.isInteger(major) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(major);
+}
+
 /**
  * Parse a major-unit decimal string (e.g. "1500.50") into minor units.
  * Uses string splitting — avoids float rounding for typical 2-decimal currencies.

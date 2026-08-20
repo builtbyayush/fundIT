@@ -1,50 +1,59 @@
-import { Container, FeatureCard, SectionHeading } from "@/components/shared/section-heading";
-import { FileSearch, HandCoins, ShieldCheck } from "lucide-react";
+import { Compass, HandCoins, Search } from "lucide-react";
+
+import { Container, SectionHeading } from "@/components/shared/section-heading";
 
 const steps = [
   {
-    icon: FileSearch,
-    title: "Discover Opportunities",
-    description:
-      "Browse curated investment projects across multiple categories, each vetted by FundIt administrators.",
+    number: "01",
+    icon: Compass,
+    title: "Discover",
+    description: "Find ideas you find interesting across products, projects, and categories.",
   },
   {
-    icon: ShieldCheck,
-    title: "Review & Evaluate",
-    description:
-      "Access detailed project information, financials, and documentation to make informed investment decisions.",
+    number: "02",
+    icon: Search,
+    title: "Explore",
+    description: "Learn about the product, people, and opportunity before you decide.",
   },
   {
+    number: "03",
     icon: HandCoins,
-    title: "Invest with Confidence",
-    description:
-      "Participate in promising ventures through a secure, transparent investment process.",
+    title: "Back",
+    description: "Participate when the opportunity is open — on terms you can review first.",
   },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-20 sm:py-24">
+    <section id="how-it-works" className="py-16 sm:py-20">
       <Container>
         <SectionHeading
-          eyebrow="Process"
-          title="How FundIt Works"
-          description="A streamlined path from discovery to investment, built for modern investors."
+          align="left"
+          eyebrow="How FundIt works"
+          title="Curiosity, then clarity, then action"
+          description="A simple path from spotting something interesting to backing it — with no invented return promises."
         />
 
-        <div className="mt-12 grid gap-8 md:grid-cols-3">
-          {steps.map((step, index) => (
-            <div key={step.title} className="relative">
-              <span
-                className="absolute -top-3 left-6 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground"
-                aria-hidden="true"
+        <ol className="mt-12 grid gap-6 md:grid-cols-3">
+          {steps.map((step) => {
+            const Icon = step.icon;
+            return (
+              <li
+                key={step.number}
+                className="relative rounded-2xl border border-border/60 bg-card p-6 shadow-card"
               >
-                {index + 1}
-              </span>
-              <FeatureCard {...step} className="pt-8" />
-            </div>
-          ))}
-        </div>
+                <p className="text-meta text-primary">{step.number}</p>
+                <div className="mt-4 flex h-12 w-12 items-center justify-center rounded-xl bg-pastel-lavender text-primary">
+                  <Icon className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-xl font-semibold text-foreground">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {step.description}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
       </Container>
     </section>
   );

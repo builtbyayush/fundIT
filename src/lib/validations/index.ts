@@ -21,7 +21,10 @@ export {
   createInvestmentSchema,
   createInvestmentFormSchema,
   investorInvestmentListQuerySchema,
+  investorInvestmentStatusFilterSchema,
   adminInvestmentListQuerySchema,
+  type InvestorInvestmentListQuery,
+  type InvestorInvestmentStatusFilter,
   type OpportunityInput,
   type CreateInvestmentInput,
 } from "./investment";

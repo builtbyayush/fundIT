@@ -5,7 +5,7 @@ FundIt is an investment opportunity platform where investors discover curated pr
 ## Stack
 
 - Next.js App Router + TypeScript
-- Tailwind CSS + shadcn-style UI
+- Tailwind CSS + shadcn-style UI — see [`src/docs/design-system.md`](src/docs/design-system.md)
 - MongoDB / Mongoose
 - Auth.js (ADMIN / INVESTOR RBAC)
 - Zod + Vitest
@@ -35,6 +35,6 @@ FundIt is an investment opportunity platform where investors discover curated pr
 
 FundIt's final investment instrument and production payment provider are pending client confirmation. Development uses a mock payment provider only (`PAYMENT_PROVIDER=mock`), blocked in production.
 
-See [`src/docs/investment-domain.md`](src/docs/investment-domain.md).
+See [`src/docs/investment-domain.md`](src/docs/investment-domain.md) for product/domain notes, [`src/docs/design-system.md`](src/docs/design-system.md) for visual language, and [`src/docs/phase-6-admin.md`](src/docs/phase-6-admin.md) for the admin workspace.
 # fundIT
 # fundIT

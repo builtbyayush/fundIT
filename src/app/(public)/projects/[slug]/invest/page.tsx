@@ -1,10 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { InvestForm } from "@/components/forms/invest-form";
 import { FundingProgressBar } from "@/components/project/funding-progress";
 import { Container } from "@/components/shared/section-heading";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,11 +15,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { auth } from "@/auth";
 import { UserRole } from "@/constants/roles";
 import { UserStatus } from "@/constants/user-status";
 import { connectToDatabase } from "@/lib/db";
+import {
+  PASTEL_BADGE_VARIANT,
+  pastelForCategorySlug,
+} from "@/lib/project/category-pastel";
 import {
   getPublishedProjectBySlug,
   serializePublicProject,
@@ -27,6 +33,11 @@ import {
 } from "@/services/opportunity.service";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Back this idea",
+  robots: { index: false, follow: false },
+};
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -60,14 +71,14 @@ export default async function InvestPage({ params }: PageProps) {
       <Container className="py-12">
         <Card className="mx-auto max-w-lg">
           <CardHeader>
-            <CardTitle>Not currently investable</CardTitle>
+            <CardTitle>Not currently open</CardTitle>
             <CardDescription>
-              This project is published, but its investment opportunity is not open.
+              This idea is published, but participation is not open right now.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href={`/projects/${slug}`}>Back to project</Link>
+              <Link href={`/projects/${slug}`}>Back to idea</Link>
             </Button>
           </CardContent>
         </Card>
@@ -75,27 +86,37 @@ export default async function InvestPage({ params }: PageProps) {
     );
   }
 
+  const primary = project.categories[0];
+
   return (
     <Container className="py-10 sm:py-12">
+      <Link
+        href={`/projects/${slug}`}
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Back to idea
+      </Link>
+
       <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
-            <CardTitle className="text-xl">{project.title}</CardTitle>
+            {primary ? (
+              <Badge
+                variant={
+                  primary.slug
+                    ? PASTEL_BADGE_VARIANT[pastelForCategorySlug(primary.slug)]
+                    : "outline"
+                }
+                className="w-fit"
+              >
+                {primary.name}
+              </Badge>
+            ) : null}
+            <CardTitle className="font-display text-2xl">{project.title}</CardTitle>
             <CardDescription>{project.shortDescription}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {project.categories.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {project.categories.map((category, index) => (
-                  <Badge
-                    key={category.id || category.slug}
-                    variant={index === 0 ? "secondary" : "outline"}
-                  >
-                    {category.name}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
+          <CardContent>
             <FundingProgressBar
               committedMinor={opportunity.committedAmountMinor}
               targetMinor={opportunity.fundingTarget?.amountMinor ?? null}
@@ -106,9 +127,9 @@ export default async function InvestPage({ params }: PageProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Invest</CardTitle>
+            <CardTitle>Choose an amount</CardTitle>
             <CardDescription>
-              Choose an amount, review the details, then continue to development checkout.
+              Review the details next, then continue to a development payment simulation.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -116,6 +137,7 @@ export default async function InvestPage({ params }: PageProps) {
               projectId={project.id}
               projectTitle={project.title}
               currency={opportunity.currency}
+              opportunityStatus={opportunity.status}
               termsVersion={opportunity.termsVersion}
               minimumInvestment={opportunity.minimumInvestment}
               maximumInvestment={opportunity.maximumInvestment}

@@ -9,6 +9,7 @@ import {
   ACCOUNT_UNAVAILABLE_MESSAGE,
   INVALID_CREDENTIALS_MESSAGE,
 } from "@/lib/auth/credentials";
+import { safeAuthCallbackUrl } from "@/lib/auth/callback-url";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
 import { User } from "@/models/User";
 
@@ -39,7 +40,7 @@ export async function loginAction(
     return { error: "Please enter a valid email and password." };
   }
 
-  const callbackUrl = String(formData.get("callbackUrl") || "");
+  const callbackUrl = safeAuthCallbackUrl(formData.get("callbackUrl"));
   const expectedRole = String(formData.get("expectedRole") || "");
   const redirectTo =
     callbackUrl ||
@@ -109,12 +110,14 @@ export async function signupAction(
     return { error: "Unable to create account. Please try again." };
   }
 
+  const redirectTo = safeAuthCallbackUrl(formData.get("callbackUrl")) ?? "/investor";
+
   try {
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
       expectedRole: UserRole.INVESTOR,
-      redirectTo: "/investor",
+      redirectTo,
     });
     return { success: true };
   } catch (error) {

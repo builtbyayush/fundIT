@@ -8,6 +8,7 @@ import {
   compareMinor,
   createMoney,
   formatMoney,
+  formatMoneyCompact,
   isAtLeast,
   isAtMost,
   parseMajorToMinor,
@@ -54,6 +55,16 @@ describe("money utilities", () => {
   it("formats for display only", () => {
     expect(formatMoney({ amountMinor: 150050, currency: CurrencyCode.INR })).toContain(
       "1,500.50",
+    );
+  });
+
+  it("formats compact INR amounts for display only", () => {
+    expect(formatMoneyCompact({ amountMinor: 248_000_000, currency: CurrencyCode.INR })).toBe(
+      "₹24.8L",
+    );
+    expect(formatMoneyCompact({ amountMinor: 10_000, currency: CurrencyCode.INR })).toBe("₹100");
+    expect(formatMoneyCompact({ amountMinor: 1_000_000_000, currency: CurrencyCode.INR })).toBe(
+      "₹1Cr",
     );
   });
 });

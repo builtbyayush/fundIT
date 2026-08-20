@@ -15,9 +15,12 @@ import {
 } from "lucide-react";
 
 import { Container, SectionHeading } from "@/components/shared/section-heading";
-import { categories as seedCategories } from "@/constants/categories";
-import { connectToDatabase } from "@/lib/db";
-import { listActiveCategories, serializeCategory } from "@/services/category.service";
+import type { HomepageCategory } from "@/lib/homepage/discovery";
+import {
+  CATEGORY_PASTEL_CLASSES,
+  pastelForCategorySlug,
+} from "@/lib/project/category-pastel";
+import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, LucideIcon> = {
   "brain-circuit": BrainCircuit,
@@ -33,57 +36,42 @@ const iconMap: Record<string, LucideIcon> = {
   folder: Folder,
 };
 
-export async function CategoriesSection() {
-  let categories = seedCategories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    description: category.description,
-    icon: category.icon,
-  }));
+interface CategoriesSectionProps {
+  categories: HomepageCategory[];
+}
 
-  try {
-    await connectToDatabase();
-    const dbCategories = await listActiveCategories();
-    if (dbCategories.length > 0) {
-      categories = dbCategories.map(serializeCategory).map((category) => ({
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        description: category.description,
-        icon: category.icon,
-      }));
-    }
-  } catch {
-    // Fall back to static seed configuration when DB is unavailable.
-  }
-
+export function CategoriesSection({ categories }: CategoriesSectionProps) {
   return (
-    <section id="categories" className="border-y bg-muted/20 py-20 sm:py-24">
+    <section id="categories" className="py-16 sm:py-20">
       <Container>
         <SectionHeading
-          eyebrow="Categories"
-          title="Browse by Category"
-          description="Explore investment opportunities across diverse sectors and industries."
+          align="left"
+          eyebrow="Browse"
+          title="Find a world that interests you"
+          description="Ten places to start — from gadgets and apps to nutrition, events, and research."
         />
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {categories.map((category) => {
             const Icon = iconMap[category.icon] ?? Folder;
+            const pastel = pastelForCategorySlug(category.slug);
+            const pastelClass = CATEGORY_PASTEL_CLASSES[pastel];
+
             return (
               <Link
                 key={category.id}
                 href={`/projects?category=${category.slug}`}
-                className="group flex flex-col items-center rounded-xl border bg-card p-6 text-center shadow-sm transition-all hover:shadow-md"
+                className={cn(
+                  "motion-safe-hover-lift group flex min-h-28 flex-col justify-between rounded-2xl p-5 shadow-soft",
+                  pastelClass.surface,
+                )}
                 aria-label={`Browse ${category.name} category`}
               >
-                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/10 text-secondary transition-colors group-hover:bg-secondary/20">
-                  <Icon className="h-6 w-6" aria-hidden="true" />
-                </div>
-                <h3 className="text-sm font-semibold text-foreground">{category.name}</h3>
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                  {category.description}
-                </p>
+                <Icon
+                  className="h-7 w-7 motion-safe-transition group-hover:-translate-y-0.5"
+                  aria-hidden="true"
+                />
+                <h3 className="mt-4 text-sm font-semibold">{category.name}</h3>
               </Link>
             );
           })}

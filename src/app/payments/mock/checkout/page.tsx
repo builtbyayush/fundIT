@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { MockCheckoutForm } from "@/components/payments/mock-checkout-form";
 import { Container } from "@/components/shared/section-heading";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -17,6 +19,11 @@ import { formatMoney } from "@/lib/money";
 import { PaymentOrder } from "@/models/PaymentOrder";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Payment simulation",
+  robots: { index: false, follow: false },
+};
 
 interface PageProps {
   searchParams: Promise<{ orderId?: string; investmentId?: string }>;
@@ -50,9 +57,12 @@ export default async function MockCheckoutPage({ searchParams }: PageProps) {
 
   return (
     <Container className="py-12">
-      <Card className="mx-auto max-w-lg">
-        <CardHeader>
-          <CardTitle>Mock payment checkout</CardTitle>
+      <Card variant="elevated" className="mx-auto max-w-lg">
+        <CardHeader className="space-y-3">
+          <Badge variant="pastelYellow" className="w-fit">
+            Development payment simulation
+          </Badge>
+          <CardTitle className="font-display text-2xl">Checkout</CardTitle>
           <CardDescription>
             {investment.investmentNumber} ·{" "}
             {formatMoney({

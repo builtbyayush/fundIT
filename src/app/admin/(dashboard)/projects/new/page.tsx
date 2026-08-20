@@ -9,14 +9,11 @@ export default async function NewProjectPage() {
   const categories = (await listActiveCategories()).map(serializeCategory);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Admin / Projects / New
-        </p>
-        <h2 className="text-2xl font-bold tracking-tight">Create project</h2>
-        <p className="text-muted-foreground">
-          New projects start as drafts and remain private until published.
+        <h2 className="text-xl font-semibold tracking-tight">Create project</h2>
+        <p className="text-sm text-muted-foreground">
+          New projects start as drafts and stay private until you publish them.
         </p>
       </div>
       <ProjectForm

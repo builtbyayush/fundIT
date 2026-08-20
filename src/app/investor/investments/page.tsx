@@ -1,18 +1,18 @@
 import Link from "next/link";
+import { Compass, SearchX, Wallet } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { InvestmentCard } from "@/components/investor/investment-card";
+import { InvestmentFilterPills } from "@/components/investor/investment-filter-pills";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Container } from "@/components/shared/section-heading";
-import { InvestmentStatus } from "@/constants/investment-status";
-import { formatMoney } from "@/lib/money";
-import { connectToDatabase } from "@/lib/db";
-import { requireRole } from "@/lib/auth/guards";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { UserRole } from "@/constants/roles";
-import {
-  investmentStatusLabel,
-  paymentStatusLabel,
-} from "@/lib/status-labels";
+import { requireRole } from "@/lib/auth/guards";
+import { connectToDatabase } from "@/lib/db";
+import { investmentsListHref, toInvestorInvestmentCard } from "@/lib/investor/investment-card";
 import { investorInvestmentListQuerySchema } from "@/lib/validations/investment";
+import { getInvestmentSummariesForProjects } from "@/services/opportunity.service";
 import {
   listInvestorInvestments,
   serializeInvestment,
@@ -24,139 +24,146 @@ interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+function emptyCopy(status: string, search: string) {
+  if (search) {
+    return {
+      icon: SearchX,
+      title: "No matching investments",
+      description: "Try a different project name, or clear the search to see everything you’ve backed.",
+    };
+  }
+  if (status === "confirmed") {
+    return {
+      icon: Wallet,
+      title: "No confirmed investments yet",
+      description: "Once a payment goes through, it will show up here.",
+    };
+  }
+  if (status === "pending") {
+    return {
+      icon: Wallet,
+      title: "No pending payments",
+      description: "You’re all caught up. Nothing is waiting on checkout right now.",
+    };
+  }
+  if (status === "failed") {
+    return {
+      icon: Wallet,
+      title: "No failed payments",
+      description: "That’s a good thing. Failed checkouts would appear here if they happen.",
+    };
+  }
+  return {
+    icon: Compass,
+    title: "Your FundIt story starts here.",
+    description: "Discover interesting ideas and back the ones you believe in.",
+  };
+}
+
 export default async function InvestorInvestmentsPage({ searchParams }: PageProps) {
   const investor = await requireRole(UserRole.INVESTOR);
   const params = await searchParams;
   const query = investorInvestmentListQuerySchema.parse({
     page: params.page ?? 1,
-    limit: params.limit ?? 10,
+    limit: params.limit ?? 12,
+    status: typeof params.status === "string" ? params.status : "all",
+    search: typeof params.search === "string" ? params.search : "",
   });
 
   await connectToDatabase();
-  const result = await listInvestorInvestments(investor.id, query.page, query.limit);
+  const result = await listInvestorInvestments(investor.id, query);
   const investments = result.items.map(serializeInvestment);
+  const summaries = await getInvestmentSummariesForProjects(
+    investments.map((item) => item.project.id),
+  );
+  const cards = investments.map((item) =>
+    toInvestorInvestmentCard(item, summaries.get(item.project.id)),
+  );
+
+  const empty = emptyCopy(query.status, query.search);
+  const hasFilters = query.status !== "all" || Boolean(query.search);
 
   return (
     <Container className="py-10 sm:py-12">
-      <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">My investments</h1>
-        <p className="text-muted-foreground">
-          Track commitments and payment status. Confirmed amounts are separate from
-          pending payment attempts.
+      <div className="mb-8 max-w-2xl space-y-2">
+        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">My investments</h1>
+        <p className="text-lg leading-relaxed text-muted-foreground">
+          Keep track of the ideas you’ve backed.
         </p>
       </div>
 
-      {investments.length === 0 ? (
-        <div className="rounded-xl border bg-card p-10 text-center">
-          <h2 className="text-lg font-semibold">
-            You haven&apos;t invested in an opportunity yet.
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Explore open opportunities to make your first commitment.
-          </p>
-          <Button className="mt-4" asChild>
-            <Link href="/projects">Explore opportunities</Link>
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div className="space-y-4 md:hidden">
-            {investments.map((item) => (
-              <div key={item.id} className="rounded-xl border bg-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{item.investmentNumber}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {"title" in item.project ? item.project.title : item.project.id}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/investor/investments/${item.id}`}>View</Link>
-                  </Button>
-                </div>
-                <p className="mt-3 text-lg font-semibold">
-                  {formatMoney({
-                    amountMinor: item.amountMinor,
-                    currency: item.currency,
-                  })}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge variant="secondary">{investmentStatusLabel(item.status)}</Badge>
-                  <Badge variant="outline">{paymentStatusLabel(item.paymentStatus)}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="mb-8 space-y-4">
+        <InvestmentFilterPills status={query.status} search={query.search} />
+        {cards.length > 0 || hasFilters ? (
+          <form action="/investor/investments" method="get" className="max-w-md">
+            {query.status !== "all" ? (
+              <input type="hidden" name="status" value={query.status} />
+            ) : null}
+            <Input
+              name="search"
+              defaultValue={query.search}
+              placeholder="Search by project name"
+              aria-label="Search investments by project name"
+            />
+          </form>
+        ) : null}
+      </div>
 
-          <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b bg-muted/40 text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Number</th>
-                  <th className="px-4 py-3 font-medium">Project</th>
-                  <th className="px-4 py-3 font-medium">Amount</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Payment</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {investments.map((item) => (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="px-4 py-3 font-medium">{item.investmentNumber}</td>
-                    <td className="px-4 py-3">
-                      {"title" in item.project ? item.project.title : item.project.id}
-                    </td>
-                    <td className="px-4 py-3">
-                      {formatMoney({
-                        amountMinor: item.amountMinor,
-                        currency: item.currency,
-                      })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant="secondary">
-                        {investmentStatusLabel(item.status)}
-                      </Badge>
-                      {item.status === InvestmentStatus.PAYMENT_PENDING ? (
-                        <span className="sr-only">Action needed: complete payment</span>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant="outline">
-                        {paymentStatusLabel(item.paymentStatus)}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/investor/investments/${item.id}`}>View</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+      {cards.length === 0 ? (
+        <EmptyState
+          icon={empty.icon}
+          title={empty.title}
+          description={empty.description}
+          action={
+            hasFilters ? (
+              <Button variant="outline" asChild>
+                <Link href="/investor/investments">Clear filters</Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/projects">Explore ideas</Link>
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {cards.map((investment) => (
+            <InvestmentCard key={investment.id} investment={investment} />
+          ))}
+        </div>
       )}
 
       {result.totalPages > 1 ? (
-        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
           <p>
             Page {result.page} of {result.totalPages}
           </p>
           <div className="flex gap-2">
             {result.page > 1 ? (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/investor/investments?page=${result.page - 1}`}>Previous</Link>
+                <Link
+                  href={investmentsListHref({
+                    status: query.status,
+                    search: query.search,
+                    page: result.page - 1,
+                  })}
+                >
+                  Previous
+                </Link>
               </Button>
             ) : null}
             {result.page < result.totalPages ? (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/investor/investments?page=${result.page + 1}`}>Next</Link>
+                <Link
+                  href={investmentsListHref({
+                    status: query.status,
+                    search: query.search,
+                    page: result.page + 1,
+                  })}
+                >
+                  Next
+                </Link>
               </Button>
             ) : null}
           </div>

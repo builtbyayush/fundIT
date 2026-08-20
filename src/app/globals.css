@@ -2,12 +2,18 @@
 
 /*
  * Semantic design tokens.
- * Brand colors (primary, secondary, accent) are injected at runtime
+ * Brand colors (primary, secondary, accent, pastels) are injected at runtime
  * from src/config/theme.ts via the root layout.
  */
 @theme inline {
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
+  --color-foreground-subtle: hsl(var(--foreground-subtle));
+  --color-surface: hsl(var(--surface));
+  --color-surface-muted: hsl(var(--surface-muted));
+  --color-surface-elevated: hsl(var(--surface-elevated));
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-popover: hsl(var(--popover));
@@ -26,66 +32,120 @@
   --color-success-foreground: hsl(var(--success-foreground));
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-pastel-pink: hsl(var(--pastel-pink));
+  --color-pastel-pink-foreground: hsl(var(--pastel-pink-foreground));
+  --color-pastel-peach: hsl(var(--pastel-peach));
+  --color-pastel-peach-foreground: hsl(var(--pastel-peach-foreground));
+  --color-pastel-yellow: hsl(var(--pastel-yellow));
+  --color-pastel-yellow-foreground: hsl(var(--pastel-yellow-foreground));
+  --color-pastel-mint: hsl(var(--pastel-mint));
+  --color-pastel-mint-foreground: hsl(var(--pastel-mint-foreground));
+  --color-pastel-blue: hsl(var(--pastel-blue));
+  --color-pastel-blue-foreground: hsl(var(--pastel-blue-foreground));
+  --color-pastel-lavender: hsl(var(--pastel-lavender));
+  --color-pastel-lavender-foreground: hsl(var(--pastel-lavender-foreground));
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --shadow-soft: 0 1px 2px 0 rgb(26 22 51 / 0.04);
+  --shadow-card: 0 4px 16px -4px rgb(91 79 207 / 0.08), 0 2px 6px -2px rgb(26 22 51 / 0.04);
+  --shadow-elevated: 0 12px 32px -8px rgb(91 79 207 / 0.12), 0 4px 12px -4px rgb(26 22 51 / 0.06);
 }
 
 :root {
   /* Static semantic tokens — not brand-specific */
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
+  --background: 40 33% 97%;
+  --foreground: 250 30% 12%;
+  --foreground-subtle: 250 10% 45%;
+  --surface: 40 30% 96%;
+  --surface-muted: 40 25% 94%;
+  --surface-elevated: 0 0% 100%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 250 30% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --muted: 210 20% 96%;
-  --muted-foreground: 215 16% 47%;
-  --destructive: 0 84% 60%;
+  --popover-foreground: 250 30% 12%;
+  --muted: 40 20% 94%;
+  --muted-foreground: 250 10% 42%;
+  --destructive: 0 72% 48%;
   --destructive-foreground: 0 0% 98%;
-  --success: 142 76% 36%;
+  --success: 160 60% 32%;
   --success-foreground: 0 0% 98%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 98%;
-  --border: 214 20% 90%;
-  --input: 214 20% 90%;
-  --ring: 222 47% 11%;
+  --warning: 32 90% 46%;
+  --warning-foreground: 250 30% 12%;
+  --info: 214 80% 48%;
+  --info-foreground: 0 0% 98%;
+  --border: 40 15% 88%;
+  --input: 40 15% 88%;
+  --ring: 246 57% 56%;
 
   /*
    * Brand tokens — defaults overridden by theme config in layout.tsx.
-   * See src/config/theme.ts to change primary, secondary, accent.
+   * See src/config/theme.ts to change primary, secondary, accent, pastels.
    */
-  --primary: 213 52% 24%;
+  --primary: 246 57% 56%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 152 40% 30%;
-  --secondary-foreground: 210 40% 98%;
-  --accent: 43 70% 47%;
+  --secondary: 173 59% 41%;
+  --secondary-foreground: 222 47% 11%;
+  --accent: 28 86% 67%;
   --accent-foreground: 222 47% 11%;
-  --radius: 0.5rem;
+  --pastel-pink: 350 70% 92%;
+  --pastel-pink-foreground: 222 47% 11%;
+  --pastel-peach: 25 100% 91%;
+  --pastel-peach-foreground: 222 47% 11%;
+  --pastel-yellow: 48 100% 88%;
+  --pastel-yellow-foreground: 222 47% 11%;
+  --pastel-mint: 156 62% 90%;
+  --pastel-mint-foreground: 222 47% 11%;
+  --pastel-blue: 214 100% 92%;
+  --pastel-blue-foreground: 222 47% 11%;
+  --pastel-lavender: 258 100% 94%;
+  --pastel-lavender-foreground: 222 47% 11%;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: 222 47% 6%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 8%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222 47% 8%;
-  --popover-foreground: 210 40% 98%;
-  --muted: 217 33% 14%;
-  --muted-foreground: 215 20% 65%;
+  --background: 250 25% 8%;
+  --foreground: 40 20% 96%;
+  --foreground-subtle: 250 10% 65%;
+  --surface: 250 22% 10%;
+  --surface-muted: 250 18% 14%;
+  --surface-elevated: 250 20% 12%;
+  --card: 250 22% 10%;
+  --card-foreground: 40 20% 96%;
+  --popover: 250 22% 10%;
+  --popover-foreground: 40 20% 96%;
+  --muted: 250 18% 16%;
+  --muted-foreground: 250 10% 68%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 98%;
-  --success: 142 70% 45%;
+  --success: 160 50% 42%;
   --success-foreground: 0 0% 98%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 98%;
-  --border: 217 33% 18%;
-  --input: 217 33% 18%;
-  --ring: 213 52% 60%;
+  --warning: 32 90% 55%;
+  --warning-foreground: 250 30% 12%;
+  --info: 214 70% 58%;
+  --info-foreground: 0 0% 98%;
+  --border: 250 16% 20%;
+  --input: 250 16% 20%;
+  --ring: 246 57% 70%;
+  --pastel-pink: 350 30% 22%;
+  --pastel-pink-foreground: 40 20% 96%;
+  --pastel-peach: 25 30% 22%;
+  --pastel-peach-foreground: 40 20% 96%;
+  --pastel-yellow: 48 30% 22%;
+  --pastel-yellow-foreground: 40 20% 96%;
+  --pastel-mint: 156 25% 20%;
+  --pastel-mint-foreground: 40 20% 96%;
+  --pastel-blue: 214 30% 22%;
+  --pastel-blue-foreground: 40 20% 96%;
+  --pastel-lavender: 258 25% 22%;
+  --pastel-lavender-foreground: 40 20% 96%;
 }
 
 @layer base {
@@ -95,5 +155,67 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+
+  .text-meta {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-safe-transition {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .motion-safe-hover-lift {
+    transition:
+      transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .motion-safe-hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .motion-safe-float {
+    animation: fundit-float 5.5s ease-in-out infinite;
+  }
+
+  @keyframes fundit-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

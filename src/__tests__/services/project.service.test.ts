@@ -32,8 +32,11 @@ vi.mock("@/services/category.service", () => ({
 import {
   archiveProject,
   createProject,
+  getPublishedProjectBySlug,
   listAdminProjects,
   listPublishedProjects,
+  listPublishedProjectsExcluding,
+  listRelatedPublishedProjects,
   publishProject,
   unpublishProject,
   updateProject,
@@ -316,5 +319,83 @@ describe("project.service", () => {
     findByIdMock.mockResolvedValue(doc);
     await archiveProject(VALID_ID);
     expect(doc.status).toBe(ProjectStatus.ARCHIVED);
+  });
+
+  it("returns null for unpublished slugs", async () => {
+    const chain = {
+      populate: vi.fn().mockReturnThis(),
+      lean: vi.fn().mockReturnThis(),
+      exec: vi.fn().mockResolvedValue(null),
+    };
+    findOneMock.mockReturnValue(chain);
+
+    const result = await getPublishedProjectBySlug("draft-idea");
+
+    expect(result).toBeNull();
+    expect(findOneMock).toHaveBeenCalledWith({
+      slug: "draft-idea",
+      status: ProjectStatus.PUBLISHED,
+    });
+  });
+
+  it("lists related published projects excluding the current id", async () => {
+    const chain = {
+      sort: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      populate: vi.fn().mockReturnThis(),
+    };
+    chain.populate.mockReturnValueOnce(chain).mockResolvedValueOnce([mockProjectDoc()]);
+    findMock.mockReturnValue(chain);
+
+    const items = await listRelatedPublishedProjects({
+      excludeId: VALID_ID,
+      categoryIds: [VALID_ID_B],
+      limit: 4,
+    });
+
+    expect(items).toHaveLength(1);
+    expect(findMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: ProjectStatus.PUBLISHED,
+        _id: { $ne: expect.anything() },
+        categories: { $in: expect.any(Array) },
+      }),
+    );
+    expect(chain.limit).toHaveBeenCalledWith(4);
+  });
+
+  it("returns no related projects when there are no sibling categories", async () => {
+    const items = await listRelatedPublishedProjects({
+      excludeId: VALID_ID,
+      categoryIds: [],
+      limit: 4,
+    });
+
+    expect(items).toEqual([]);
+    expect(findMock).not.toHaveBeenCalled();
+  });
+
+  it("lists newest published projects excluding already-backed ids", async () => {
+    const chain = {
+      sort: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      populate: vi.fn().mockReturnThis(),
+    };
+    chain.populate.mockReturnValueOnce(chain).mockResolvedValueOnce([mockProjectDoc()]);
+    findMock.mockReturnValue(chain);
+
+    const items = await listPublishedProjectsExcluding({
+      excludeProjectIds: [VALID_ID],
+      limit: 4,
+    });
+
+    expect(items).toHaveLength(1);
+    expect(findMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: ProjectStatus.PUBLISHED,
+        _id: { $nin: expect.any(Array) },
+      }),
+    );
+    expect(chain.limit).toHaveBeenCalledWith(4);
   });
 });

@@ -4,6 +4,8 @@ import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
+import { FundingProgressBar } from "@/components/project/funding-progress";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +19,14 @@ import {
   type ActionState,
 } from "@/lib/actions/investment";
 import { OpportunityStatus } from "@/constants/opportunity-status";
-import { formatMoney } from "@/lib/money";
-import { opportunityStatusLabel } from "@/lib/status-labels";
+import type { ProjectStatus } from "@/constants/project-status";
 import { CURRENCY_MINOR_UNITS, type CurrencyCode } from "@/constants/currency";
+import { opportunityOpenBlockers } from "@/lib/admin/opportunity-blockers";
+import {
+  opportunityStatusBadgeVariant,
+  opportunityStatusLabel,
+} from "@/lib/admin/status-presentation";
+import { formatMoney } from "@/lib/money";
 
 interface OpportunityFormValues {
   status?: OpportunityStatus;
@@ -55,14 +62,17 @@ function SubmitButton() {
 
 export function OpportunityForm({
   projectId,
+  projectStatus,
   initial,
 }: {
   projectId: string;
+  projectStatus: ProjectStatus;
   initial?: OpportunityFormValues | null;
 }) {
   const router = useRouter();
   const action = saveOpportunityAction.bind(null, projectId);
   const [state, formAction] = useActionState(action, {} as ActionState);
+  const currency = ((initial?.currency as CurrencyCode) || "INR") as CurrencyCode;
 
   useEffect(() => {
     if (state.success) router.refresh();
@@ -71,15 +81,14 @@ export function OpportunityForm({
   return (
     <div className="space-y-6">
       {initial ? (
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="text-lg font-semibold">Opportunity overview</h2>
+        <div className="rounded-xl border border-border/80 bg-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">Opportunity overview</h2>
+            <Badge variant={opportunityStatusBadgeVariant(initial.status ?? OpportunityStatus.DRAFT)}>
+              {opportunityStatusLabel(initial.status ?? OpportunityStatus.DRAFT)}
+            </Badge>
+          </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-muted-foreground">Investment status</dt>
-              <dd className="font-medium">
-                {opportunityStatusLabel(initial.status ?? OpportunityStatus.DRAFT)}
-              </dd>
-            </div>
             <div>
               <dt className="text-muted-foreground">Terms version</dt>
               <dd className="font-medium">{initial.termsVersion ?? 1}</dd>
@@ -90,7 +99,7 @@ export function OpportunityForm({
                 {initial.fundingTarget
                   ? formatMoney({
                       amountMinor: initial.fundingTarget.amountMinor,
-                      currency: (initial.currency as CurrencyCode) || "INR",
+                      currency,
                     })
                   : "Not set"}
               </dd>
@@ -100,7 +109,7 @@ export function OpportunityForm({
               <dd className="font-medium">
                 {formatMoney({
                   amountMinor: initial.committedAmountMinor ?? 0,
-                  currency: (initial.currency as CurrencyCode) || "INR",
+                  currency,
                 })}
               </dd>
             </div>
@@ -110,7 +119,7 @@ export function OpportunityForm({
                 {initial.minimumInvestment
                   ? formatMoney({
                       amountMinor: initial.minimumInvestment.amountMinor,
-                      currency: (initial.currency as CurrencyCode) || "INR",
+                      currency,
                     })
                   : "Not set"}
               </dd>
@@ -121,7 +130,7 @@ export function OpportunityForm({
                 {initial.maximumInvestment
                   ? formatMoney({
                       amountMinor: initial.maximumInvestment.amountMinor,
-                      currency: (initial.currency as CurrencyCode) || "INR",
+                      currency,
                     })
                   : "Not set"}
               </dd>
@@ -137,33 +146,32 @@ export function OpportunityForm({
             <div>
               <dt className="text-muted-foreground">End date</dt>
               <dd className="font-medium">
-                {initial.endDate
-                  ? new Date(initial.endDate).toLocaleDateString()
-                  : "Not set"}
+                {initial.endDate ? new Date(initial.endDate).toLocaleDateString() : "Not set"}
               </dd>
             </div>
           </dl>
-        </div>
-      ) : null}
-
-      <form action={formAction} className="space-y-4 rounded-xl border bg-card p-6">
-        <div>
-          <h2 className="text-lg font-semibold">Investment terms</h2>
-          <p className="text-sm text-muted-foreground">
-            Generic configuration only. Final instrument details are pending client
-            confirmation.
-          </p>
-          {initial?.termsVersion ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Terms version: {initial.termsVersion}
-              {initial.committedAmountMinor != null
-                ? ` · Committed: ${formatMoney({
-                    amountMinor: initial.committedAmountMinor,
-                    currency: (initial.currency as CurrencyCode) || "INR",
-                  })}`
-                : null}
-            </p>
+          {initial.fundingTarget ? (
+            <div className="mt-4">
+              <FundingProgressBar
+                committedMinor={initial.committedAmountMinor ?? 0}
+                targetMinor={initial.fundingTarget.amountMinor}
+                currency={currency}
+              />
+            </div>
           ) : null}
+        </div>
+      ) : (
+        <p className="rounded-xl border border-border/80 bg-card px-4 py-3 text-sm text-muted-foreground">
+          No terms saved yet. Set a target and min/max, then open when the project is published.
+        </p>
+      )}
+
+      <form action={formAction} className="space-y-4 rounded-xl border border-border/80 bg-card p-5">
+        <div>
+          <h2 className="text-base font-semibold">Investment terms</h2>
+          <p className="text-sm text-muted-foreground">
+            Generic configuration only. Final instrument details are pending client confirmation.
+          </p>
         </div>
 
         {state.error ? (
@@ -238,19 +246,37 @@ export function OpportunityForm({
         <SubmitButton />
       </form>
 
-      <OpportunityStatusActions projectId={projectId} status={initial?.status} />
+      <OpportunityStatusActions
+        projectId={projectId}
+        projectStatus={projectStatus}
+        initial={initial}
+      />
     </div>
   );
 }
 
 function OpportunityStatusActions({
   projectId,
-  status,
+  projectStatus,
+  initial,
 }: {
   projectId: string;
-  status?: OpportunityStatus;
+  projectStatus: ProjectStatus;
+  initial?: OpportunityFormValues | null;
 }) {
   const router = useRouter();
+  const status = initial?.status;
+  const blockers = opportunityOpenBlockers({
+    projectStatus,
+    configured: Boolean(initial),
+    fundingTargetMinor: initial?.fundingTarget?.amountMinor,
+    minimumMinor: initial?.minimumInvestment?.amountMinor,
+    maximumMinor: initial?.maximumInvestment?.amountMinor,
+    startDate: initial?.startDate,
+    endDate: initial?.endDate,
+  });
+  const canOpen =
+    !status || status === OpportunityStatus.DRAFT || status === OpportunityStatus.PAUSED;
 
   async function run(
     action: (id: string) => Promise<ActionState>,
@@ -266,49 +292,62 @@ function OpportunityStatusActions({
   }
 
   return (
-    <div className="flex flex-wrap gap-2 rounded-xl border bg-card p-4">
-      <p className="w-full text-sm text-muted-foreground">
+    <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
+      <p className="text-sm text-muted-foreground">
         Status:{" "}
-        <strong>
+        <strong className="text-foreground">
           {status ? opportunityStatusLabel(status) : "Not configured"}
         </strong>
-        . Opening requires a published project and valid min/max/target dates.
       </p>
-      {(!status || status === OpportunityStatus.DRAFT || status === OpportunityStatus.PAUSED) && (
-        <Button
-          size="sm"
-          onClick={() => run(openOpportunityAction, "Open this investment opportunity?")}
-        >
-          Open
-        </Button>
-      )}
-      {status === OpportunityStatus.OPEN && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => run(pauseOpportunityAction, "Pause this opportunity?")}
-        >
-          Pause
-        </Button>
-      )}
-      {(status === OpportunityStatus.OPEN || status === OpportunityStatus.PAUSED) && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => run(closeOpportunityAction, "Close this opportunity?")}
-        >
-          Close
-        </Button>
-      )}
-      {status && status !== OpportunityStatus.CANCELLED && status !== OpportunityStatus.CLOSED && (
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={() => run(cancelOpportunityAction, "Cancel this opportunity?")}
-        >
-          Cancel
-        </Button>
-      )}
+      {canOpen && blockers.length > 0 ? (
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          {blockers.map((blocker) => (
+            <li key={blocker}>{blocker}</li>
+          ))}
+        </ul>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {canOpen ? (
+          <Button
+            size="sm"
+            disabled={blockers.length > 0}
+            onClick={() =>
+              run(openOpportunityAction, "Open this investment opportunity?")
+            }
+          >
+            Open
+          </Button>
+        ) : null}
+        {status === OpportunityStatus.OPEN ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => run(pauseOpportunityAction, "Pause this opportunity?")}
+          >
+            Pause
+          </Button>
+        ) : null}
+        {status === OpportunityStatus.OPEN || status === OpportunityStatus.PAUSED ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => run(closeOpportunityAction, "Close this opportunity?")}
+          >
+            Close
+          </Button>
+        ) : null}
+        {status &&
+        status !== OpportunityStatus.CANCELLED &&
+        status !== OpportunityStatus.CLOSED ? (
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => run(cancelOpportunityAction, "Cancel this opportunity?")}
+          >
+            Cancel
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

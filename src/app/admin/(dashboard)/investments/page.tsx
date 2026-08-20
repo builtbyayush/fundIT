@@ -1,12 +1,11 @@
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
+import { AdminInvestmentList } from "@/components/admin/admin-investment-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { INVESTMENT_STATUSES } from "@/constants/investment-status";
 import { PAYMENT_STATUSES } from "@/constants/payment-status";
-import { formatMoney } from "@/lib/money";
 import { connectToDatabase } from "@/lib/db";
 import {
   investmentStatusLabel,
@@ -38,6 +37,7 @@ export default async function AdminInvestmentsPage({ searchParams }: PageProps) 
   await connectToDatabase();
   const result = await listAdminInvestments(query);
   const investments = result.items.map(serializeInvestment);
+  const filtered = Boolean(query.search || query.status || query.paymentStatus);
 
   const buildHref = (page: number) => {
     const sp = new URLSearchParams();
@@ -51,16 +51,14 @@ export default async function AdminInvestmentsPage({ searchParams }: PageProps) 
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Admin / Investments
-        </p>
-        <h2 className="text-2xl font-bold tracking-tight">Investments</h2>
-        <p className="text-muted-foreground">
-          Confirmed commitments are distinct from payment attempts.
+        <h2 className="text-xl font-semibold tracking-tight">Investments</h2>
+        <p className="text-sm text-muted-foreground">
+          {result.total} investment{result.total === 1 ? "" : "s"}
+          {filtered ? " matching filters" : ""}
         </p>
       </div>
 
-      <form className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-4">
+      <form className="grid gap-3 rounded-xl border border-border/80 bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Input
           name="search"
           placeholder="Search investment number"
@@ -92,67 +90,12 @@ export default async function AdminInvestmentsPage({ searchParams }: PageProps) 
         </Button>
       </form>
 
-      {investments.length === 0 ? (
-        <div className="rounded-xl border bg-card p-10 text-center">
-          <h3 className="text-lg font-semibold">No investments yet.</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Investor commitments will appear here once created.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Number</th>
-                <th className="px-4 py-3 font-medium">Investor</th>
-                <th className="px-4 py-3 font-medium">Project</th>
-                <th className="px-4 py-3 font-medium">Amount</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Payment</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {investments.map((item) => (
-                <tr key={item.id} className="border-b last:border-0">
-                  <td className="px-4 py-3 font-medium">{item.investmentNumber}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {"email" in item.investor ? item.investor.email : item.investor.id}
-                  </td>
-                  <td className="px-4 py-3">
-                    {"title" in item.project ? item.project.title : item.project.id}
-                  </td>
-                  <td className="px-4 py-3">
-                    {formatMoney({
-                      amountMinor: item.amountMinor,
-                      currency: item.currency,
-                    })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="secondary">
-                      {investmentStatusLabel(item.status)}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline">
-                      {paymentStatusLabel(item.paymentStatus)}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <AdminInvestmentList investments={investments} filtered={filtered} />
 
       {result.totalPages > 1 ? (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <p>
-            Page {result.page} of {result.totalPages} · {result.total} total
+            Page {result.page} of {result.totalPages} · {result.total} investments
           </p>
           <div className="flex gap-2">
             {result.page > 1 ? (

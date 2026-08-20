@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 
 import { siteConfig, themeConfig } from "@/config";
 import { generateThemeCssVariables } from "@/lib/utils";
 
 import "./globals.css";
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plus-jakarta",
+  display: "swap",
 });
 
 const themeVariables = generateThemeCssVariables(themeConfig);
@@ -16,7 +18,7 @@ const themeVariables = generateThemeCssVariables(themeConfig);
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — Discover Investment Opportunities`,
+    default: `${siteConfig.name} — Discover ideas. Back what you believe in.`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -24,13 +26,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: siteConfig.name,
-    title: `${siteConfig.name} — Discover Investment Opportunities`,
+    title: `${siteConfig.name} — Discover ideas. Back what you believe in.`,
     description: siteConfig.description,
     url: siteConfig.url,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteConfig.name} — Discover Investment Opportunities`,
+    title: `${siteConfig.name} — Discover ideas. Back what you believe in.`,
     description: siteConfig.description,
   },
   icons: {
@@ -45,7 +47,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" style={themeVariables as React.CSSProperties}>
-      <body className={`${inter.variable} font-sans`}>{children}</body>
+      <body className={`${plusJakarta.variable} font-sans`}>{children}</body>
     </html>
   );
 }

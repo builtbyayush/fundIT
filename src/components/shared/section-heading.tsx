@@ -26,10 +26,12 @@ export function SectionHeading({
       )}
     >
       {eyebrow && (
-        <p className="text-sm font-medium uppercase tracking-wider text-accent">{eyebrow}</p>
+        <p className="text-meta text-primary">{eyebrow}</p>
       )}
-      <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{title}</h2>
-      {description && <p className="text-lg text-muted-foreground">{description}</p>}
+      <h2 className="font-display text-3xl text-foreground sm:text-4xl">{title}</h2>
+      {description && (
+        <p className="text-lg leading-relaxed text-muted-foreground">{description}</p>
+      )}
     </div>
   );
 }
@@ -45,12 +47,12 @@ export function FeatureCard({ icon: Icon, title, description, className }: Featu
   return (
     <div
       className={cn(
-        "group rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md",
+        "motion-safe-hover-lift group rounded-2xl border border-border/60 bg-card p-6 shadow-card",
         className,
       )}
     >
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="h-6 w-6" aria-hidden="true" />
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-pastel-lavender text-pastel-lavender-foreground">
+        <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
       </div>
       <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
       <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>

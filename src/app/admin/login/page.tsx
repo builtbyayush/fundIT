@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { AuthCard } from "@/components/forms/auth-card";
 import { LoginForm } from "@/components/forms/login-form";
 import { UserRole } from "@/constants/roles";
-import { siteConfig } from "@/config";
+import { safeAuthCallbackUrl } from "@/lib/auth/callback-url";
 
 interface AdminLoginPageProps {
   searchParams: Promise<{ callbackUrl?: string }>;
@@ -20,19 +20,20 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
 
   return (
     <AuthCard
-      title="Admin sign in"
-      description={`Sign in to the ${siteConfig.name} admin portal`}
+      decorative={false}
+      title="Staff sign in"
+      description="Use your FundIt admin account. There is no public signup for this portal."
       footer={
         <p className="text-center text-xs text-muted-foreground">
-          Admin accounts are provisioned by the platform. There is no public admin signup.
+          Admin accounts are provisioned by the platform.
         </p>
       }
     >
       <LoginForm
-        callbackUrl={params.callbackUrl ?? "/admin"}
+        callbackUrl={safeAuthCallbackUrl(params.callbackUrl) ?? "/admin"}
         expectedRole={UserRole.ADMIN}
         signupHref={null}
-        submitLabel="Sign in to admin"
+        submitLabel="Sign in"
       />
     </AuthCard>
   );

@@ -42,7 +42,9 @@ export function ProjectStatusActions({ projectId, status }: ProjectStatusActions
         <Button
           size="sm"
           disabled={pending}
-          onClick={() => run(publishProjectAction, "Publish this opportunity?")}
+          onClick={() =>
+            run(publishProjectAction, "Publish this project? It will appear on the public catalog.")
+          }
         >
           Publish
         </Button>
@@ -52,7 +54,12 @@ export function ProjectStatusActions({ projectId, status }: ProjectStatusActions
           size="sm"
           variant="outline"
           disabled={pending}
-          onClick={() => run(unpublishProjectAction, "Unpublish this opportunity?")}
+          onClick={() =>
+            run(
+              unpublishProjectAction,
+              "Unpublish this project? It will no longer appear on the public catalog.",
+            )
+          }
         >
           Unpublish
         </Button>
@@ -62,7 +69,12 @@ export function ProjectStatusActions({ projectId, status }: ProjectStatusActions
           size="sm"
           variant="destructive"
           disabled={pending}
-          onClick={() => run(archiveProjectAction, "Archive this opportunity?")}
+          onClick={() =>
+            run(
+              archiveProjectAction,
+              "Archive this project? It will leave the active catalog.",
+            )
+          }
         >
           Archive
         </Button>

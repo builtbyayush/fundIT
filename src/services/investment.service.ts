@@ -18,6 +18,7 @@ import { tryReserveFunding, releaseFundingReservation } from "@/services/funding
 import { Investment, type IInvestmentDocument } from "@/models/Investment";
 import { getNextSequence } from "@/models/Counter";
 import { Project } from "@/models/Project";
+import type { InvestorInvestmentListQuery } from "@/lib/validations/investment";
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -134,29 +135,90 @@ export async function getInvestorInvestment(
   return investment;
 }
 
+const INVESTOR_LIST_STATUS_GROUPS: Record<
+  Exclude<InvestorInvestmentListQuery["status"], "all">,
+  InvestmentStatusType[]
+> = {
+  confirmed: [InvestmentStatus.CONFIRMED],
+  pending: [InvestmentStatus.INITIATED, InvestmentStatus.PAYMENT_PENDING],
+  failed: [InvestmentStatus.FAILED],
+};
+
+const INVESTOR_PROJECT_POPULATE = {
+  path: "project",
+  select: "title slug coverImage thumbnail primaryCategory categories",
+  populate: [
+    { path: "primaryCategory", select: "name slug icon" },
+    { path: "categories", select: "name slug icon" },
+  ],
+};
+
 export async function listInvestorInvestments(
   investorId: string,
-  page: number,
-  limit: number,
+  query: Pick<InvestorInvestmentListQuery, "page" | "limit" | "status" | "search">,
 ): Promise<PaginatedResult<IInvestmentDocument>> {
-  const filter = { investor: investorId };
-  const skip = (page - 1) * limit;
+  const filter: Record<string, unknown> = { investor: investorId };
+  const statusGroup =
+    query.status && query.status !== "all"
+      ? INVESTOR_LIST_STATUS_GROUPS[query.status]
+      : undefined;
+  if (statusGroup) {
+    filter.status = { $in: statusGroup };
+  }
+
+  const search = query.search?.trim();
+  if (search) {
+    const matchingProjects = await Project.find({
+      title: { $regex: search, $options: "i" },
+    }).select("_id");
+    const projectIds = matchingProjects.map((project) => project._id);
+    if (projectIds.length === 0) {
+      return {
+        items: [],
+        page: query.page,
+        limit: query.limit,
+        total: 0,
+        totalPages: 0,
+      };
+    }
+    filter.project = { $in: projectIds };
+  }
+
+  const skip = (query.page - 1) * query.limit;
   const [items, total] = await Promise.all([
     Investment.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit)
-      .populate("project", "title slug"),
+      .limit(query.limit)
+      .populate(INVESTOR_PROJECT_POPULATE),
     Investment.countDocuments(filter),
   ]);
 
   return {
     items: items as unknown as IInvestmentDocument[],
-    page,
-    limit,
+    page: query.page,
+    limit: query.limit,
     total,
-    totalPages: Math.ceil(total / limit) || 0,
+    totalPages: Math.ceil(total / query.limit) || 0,
   };
+}
+
+export async function listRecentInvestorInvestments(
+  investorId: string,
+  limit = 6,
+): Promise<IInvestmentDocument[]> {
+  const result = await listInvestorInvestments(investorId, {
+    page: 1,
+    limit,
+    status: "all",
+    search: "",
+  });
+  return result.items;
+}
+
+export async function getInvestorBackedProjectIds(investorId: string): Promise<string[]> {
+  const ids = await Investment.distinct("project", { investor: investorId });
+  return ids.map((id) => String(id));
 }
 
 export async function listAdminInvestments(query: {
@@ -179,7 +241,7 @@ export async function listAdminInvestments(query: {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(query.limit)
-      .populate("project", "title slug")
+      .populate("project", "_id title slug")
       .populate("investor", "name email"),
     Investment.countDocuments(filter),
   ]);
@@ -315,11 +377,60 @@ export async function failInvestment(
 
 export function serializeInvestment(investment: IInvestmentDocument) {
   const project = investment.project as unknown as
-    | { _id: mongoose.Types.ObjectId; title?: string; slug?: string }
+    | {
+        _id: mongoose.Types.ObjectId;
+        title?: string;
+        slug?: string;
+        coverImage?: string | null;
+        thumbnail?: string | null;
+        categories?: Array<{
+          _id: mongoose.Types.ObjectId;
+          name?: string;
+          slug?: string;
+        }>;
+        primaryCategory?: {
+          _id: mongoose.Types.ObjectId;
+          name?: string;
+          slug?: string;
+        } | null;
+      }
     | mongoose.Types.ObjectId;
   const investor = investment.investor as unknown as
     | { _id: mongoose.Types.ObjectId; name?: string; email?: string }
     | mongoose.Types.ObjectId;
+
+  const populatedProject =
+    project && typeof project === "object" && "title" in project
+      ? {
+          id: project._id.toString(),
+          title: project.title,
+          slug: project.slug,
+          coverImage: project.coverImage ?? null,
+          thumbnail: project.thumbnail ?? null,
+          categories: Array.isArray(project.categories)
+            ? project.categories
+                .filter(
+                  (category): category is NonNullable<typeof category> =>
+                    Boolean(category) && typeof category === "object" && "name" in category,
+                )
+                .map((category) => ({
+                  id: category._id.toString(),
+                  name: category.name ?? "",
+                  slug: category.slug ?? "",
+                }))
+            : [],
+          primaryCategory:
+            project.primaryCategory &&
+            typeof project.primaryCategory === "object" &&
+            "name" in project.primaryCategory
+              ? {
+                  id: project.primaryCategory._id.toString(),
+                  name: project.primaryCategory.name ?? "",
+                  slug: project.primaryCategory.slug ?? "",
+                }
+              : null,
+        }
+      : { id: String(project) };
 
   return {
     id: investment._id.toString(),
@@ -334,14 +445,7 @@ export function serializeInvestment(investment: IInvestmentDocument) {
     cancelledAt: investment.cancelledAt,
     failedAt: investment.failedAt,
     createdAt: investment.createdAt,
-    project:
-      project && typeof project === "object" && "title" in project
-        ? {
-            id: project._id.toString(),
-            title: project.title,
-            slug: project.slug,
-          }
-        : { id: String(project) },
+    project: populatedProject,
     investor:
       investor && typeof investor === "object" && "email" in investor
         ? {
@@ -354,7 +458,7 @@ export function serializeInvestment(investment: IInvestmentDocument) {
 }
 
 export async function getInvestorInvestmentStats(investorId: string) {
-  const [total, confirmed, pending] = await Promise.all([
+  const [total, confirmed, pending, failed] = await Promise.all([
     Investment.countDocuments({ investor: investorId }),
     Investment.countDocuments({
       investor: investorId,
@@ -365,6 +469,10 @@ export async function getInvestorInvestmentStats(investorId: string) {
       status: {
         $in: [InvestmentStatus.INITIATED, InvestmentStatus.PAYMENT_PENDING],
       },
+    }),
+    Investment.countDocuments({
+      investor: investorId,
+      status: InvestmentStatus.FAILED,
     }),
   ]);
 
@@ -382,6 +490,7 @@ export async function getInvestorInvestmentStats(investorId: string) {
     total,
     confirmed,
     pending,
+    failed,
     confirmedAmountMinor: confirmedAgg[0]?.total ?? 0,
   };
 }

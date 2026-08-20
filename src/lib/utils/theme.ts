@@ -44,21 +44,44 @@ export function getContrastForeground(hex: string): string {
   return luminance > 0.5 ? "#0f172a" : "#f8fafc";
 }
 
+/**
+ * Pastel surfaces are always light. Pair them with a dark, readable foreground
+ * so pastel-on-pastel text never happens by accident.
+ */
+export function getPastelForeground(hex: string): string {
+  const contrast = getContrastForeground(hex);
+  return contrast === "#f8fafc" ? "#0f172a" : contrast;
+}
+
 export interface ThemeCssVariables {
   [key: string]: string;
+}
+
+export const PASTEL_TOKEN_KEYS = [
+  "pink",
+  "peach",
+  "yellow",
+  "mint",
+  "blue",
+  "lavender",
+] as const;
+
+export type PastelTokenKey = (typeof PASTEL_TOKEN_KEYS)[number];
+
+export interface BrandThemeInput {
+  primary: string;
+  secondary: string;
+  accent: string;
+  radius: string;
+  pastels: Record<PastelTokenKey, string>;
 }
 
 /**
  * Generates CSS custom properties from brand color configuration.
  * Used to populate :root variables from centralized theme config.
  */
-export function generateThemeCssVariables(config: {
-  primary: string;
-  secondary: string;
-  accent: string;
-  radius: string;
-}): ThemeCssVariables {
-  return {
+export function generateThemeCssVariables(config: BrandThemeInput): ThemeCssVariables {
+  const variables: ThemeCssVariables = {
     "--primary": hexToHslComponents(config.primary),
     "--primary-foreground": hexToHslComponents(getContrastForeground(config.primary)),
     "--secondary": hexToHslComponents(config.secondary),
@@ -67,4 +90,12 @@ export function generateThemeCssVariables(config: {
     "--accent-foreground": hexToHslComponents(getContrastForeground(config.accent)),
     "--radius": config.radius,
   };
+
+  for (const key of PASTEL_TOKEN_KEYS) {
+    const hex = config.pastels[key];
+    variables[`--pastel-${key}`] = hexToHslComponents(hex);
+    variables[`--pastel-${key}-foreground`] = hexToHslComponents(getPastelForeground(hex));
+  }
+
+  return variables;
 }
